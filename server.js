@@ -5,9 +5,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve the dashboard as static files
-app.use(express.static('.'));
-
+// Define API routes FIRST (before static files)
 app.post('/search', async (req, res) => {
   try {
     const { apiKey, postcode, list } = req.body;
@@ -25,6 +23,9 @@ app.post('/search', async (req, res) => {
     res.json({ error: error.message });
   }
 });
+
+// Serve static files LAST
+app.use(express.static('.'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
