@@ -5,6 +5,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve the dashboard as static files
+app.use(express.static('.'));
+
 app.post('/search', async (req, res) => {
   try {
     const { apiKey, postcode, list } = req.body;
