@@ -7,13 +7,13 @@ app.use(express.json());
 
 app.post('/search', async (req, res) => {
   try {
-    const { apiKey, postcode, list } = req.body;
+    const { apiKey, postcode, list, radius } = req.body;
     
     if (!apiKey || !postcode || !list) {
       return res.status(400).json({ error: 'Missing parameters' });
     }
     
-    const url = `https://api.propertydata.co.uk/sourced-properties?key=${apiKey}&postcode=${postcode}&list=${list}&standardised_type=terraced_house,semi_detached_house,detached_house&results=500`;
+    const url = `https://api.propertydata.co.uk/sourced-properties?key=${apiKey}&postcode=${postcode}&list=${list}&standardised_type=terraced_house,semi_detached_house,detached_house&radius=${radius || 10}&results=500`;
     
     const response = await fetch(url);
     const data = await response.json();
