@@ -5,13 +5,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Define API routes FIRST (before static files)
 app.post('/search', async (req, res) => {
   try {
     const { apiKey, postcode, list } = req.body;
     
     if (!apiKey || !postcode || !list) {
-      return res.json({ error: 'Missing required parameters' });
+      return res.status(400).json({ error: 'Missing parameters' });
     }
     
     const url = `https://api.propertydata.co.uk/sourced-properties?key=${apiKey}&postcode=${postcode}&list=${list}&standardised_type=terraced_house,semi_detached_house,detached_house&results=500`;
@@ -20,14 +19,13 @@ app.post('/search', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Serve static files LAST
-app.use(express.static('.'));
+app.get('/', (req, res) => {
+  res.json({ message: 'BRR Backend API is running' });
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Running on port ${PORT}`));
