@@ -1,98 +1,10 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BRR Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: linear-gradient(135deg, #2c5aa0 0%, #1e3a5f 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; }
-        .panel { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; }
-        label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 13px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; background: #2c5aa0; color: white; }
-        .btn:hover { background: #1e3a5f; }
-        .error { background: #fee; color: #c33; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #c33; }
-        .success { background: #efe; color: #3c3; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3c3; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f5f5f5; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        .price { color: #27ae60; font-weight: 600; }
-        .roi { background: #e8f5e9; color: #27ae60; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
-        .setup { background: white; padding: 40px; border-radius: 12px; max-width: 500px; margin: 50px auto; text-align: center; }
-    </style>
-</head>
 <body>
-    <div class="container">
-        <div id="app"></div>
-    </div>
-
-    <script>
-        const app = {
-            apiKey: localStorage.getItem('brr_key') || '',
-            showSetup: !localStorage.getItem('brr_key'),
-            properties: [],
-            loading: false,
-            filters: { region: 'NE1', list: 'unmodernised-properties', minPrice: 15000, maxPrice: 85000 }
-        };
-
-        const regions = { 'NE1': 'Newcastle', 'DH1': 'Durham', 'SR1': 'Sunderland', 'TS1': 'Middlesbrough' };
-        const lists = { 'unmodernised-properties': 'Unmodernised', 'price-reduced': 'Price Reduced', 'high-yield': 'High Yield' };
-
-        function saveKey(key) { 
-            localStorage.setItem('brr_key', key); 
-            app.apiKey = key; 
-            app.showSetup = false; 
-            render(); 
-        }
-
-        function metrics(p) { 
-            const price = p.price || 0; 
-            const dep = Math.round(price * 0.25); 
-            const inv = dep + 20000; 
-            const profit = price + 20000 - inv; 
-            const roi = Math.round((profit / inv) * 100); 
-            return { dep, inv, profit, roi }; 
-        }
-
-        async function search() {
-            app.loading = true; 
-            app.properties = []; 
-            render();
-
-            try {
-                const res = await fetch('https://brr-dashboard-production.up.railway.app/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        apiKey: app.apiKey,
-                        postcode: app.filters.region,
-                        list: app.filters.list
-                    })
-                });
-                const data = await res.json();
-                
-                if (data.status === 'success' && data.properties) {
-                    app.properties = data.properties.filter(p => p.price >= app.filters.minPrice && p.price <= app.filters.maxPrice);
-                } else {
-                    alert('Error: ' + (data.message || 'Search failed'));
-                }
-            } catch (e) { 
-                alert('Error: ' + e.message); 
-            }
-            finally { app.loading = false; render(); }
-        }
-
-        function render() {
-            const el = document.getElementById('app');
-            
-            if (app.showSetup) {
-                el.innerHTML = `
-                    <div class="setup">
-                        <h2>🔑 PropertyData API Key</h2>
-                        <p>From PropertyData.co.uk → Settings → API</p>
-                        <input type="password" id="key" placeholder="Your API key" style="margin-bottom: 15px;">
-                        <button class="btn" o
+<h1>TEST - If you see this, the page is loading</h1>
+<p>JavaScript is working</p>
+<script>
+document.write("Script executed");
+</script>
+</body>
+</html>
