@@ -130,6 +130,9 @@
                         <div>
                             <label>Max Price</label>
                             <input type="number" value="85000" onchange="state.maxPrice=parseInt(this.value)">
+                        <div>
+                            <label>Radius (miles)</label>
+                            <input type="number" id="radiusInput" value="10" onchange="state.radius=parseInt(this.value)">
                         </div>
                     </div>
                     <button class="btn" onclick="search()" ${state.loading ? 'disabled' : ''} style="margin-right: 10px;">🔍 Search</button>
