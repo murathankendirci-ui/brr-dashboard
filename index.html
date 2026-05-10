@@ -6,18 +6,26 @@
     <title>BRR Dashboard</title>
     <style>
         body { font-family: Arial; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 1400px; margin: 0 auto; }
         .header { background: #2c5aa0; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .panel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 100%; margin-bottom: 10px; font-size: 14px; }
         .btn { padding: 10px 20px; background: #2c5aa0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .btn:hover { background: #1e3a5f; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #f5f5f5; font-weight: bold; }
+        .address-link { color: #2c5aa0; text-decoration: none; cursor: pointer; font-weight: bold; }
+        .address-link:hover { text-decoration: underline; }
         .price { color: #27ae60; font-weight: bold; }
         .roi { background: #e8f5e9; color: #27ae60; padding: 4px 8px; border-radius: 4px; }
+        .days { color: #666; font-size: 13px; }
         .setup { background: white; padding: 40px; max-width: 400px; margin: 100px auto; text-align: center; border-radius: 8px; }
+        .buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .buttons .btn { margin-bottom: 0; }
+        .error { background: #fee; color: #c33; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #c33; }
+        .success { background: #efe; color: #3c3; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #3c3; }
     </style>
 </head>
 <body>
@@ -32,7 +40,37 @@
             region: 'NE1',
             list: 'unmodernised-properties',
             minPrice: 15000,
-            maxPrice: 85000
+            maxPrice: 85000,
+            radius: 10
+        };
+
+        const regions = {
+            'NE1': '🏙️ Newcastle City',
+            'NE2': 'Newcastle (Fenham)',
+            'NE3': 'Newcastle (Elswick)',
+            'NE4': 'Newcastle (Byker)',
+            'NE5': 'Newcastle (North)',
+            'NE8': 'Gateshead',
+            'NE25': 'Whitley Bay',
+            'NE26': 'Tynemouth',
+            'NE27': 'North Shields',
+            'NE28': 'Wallsend',
+            'NE33': 'South Shields',
+            'DH1': '🏛️ Durham City',
+            'DH2': 'Durham (North)',
+            'DH3': 'Durham (South)',
+            'SR1': '🏖️ Sunderland City',
+            'SR2': 'Sunderland (North)',
+            'SR3': 'Sunderland (South)',
+            'TS1': '🏭 Middlesbrough City',
+            'TS2': 'Middlesbrough (South)'
+        };
+
+        const lists = {
+            'unmodernised-properties': 'Unmodernised (53,832)',
+            'price-reduced': 'Price Reduced (24,892)',
+            'high-yield': 'High Yield (14,038)',
+            'quick-sale': 'Quick Sale (6,319)'
         };
 
         function saveKey() {
@@ -53,19 +91,56 @@
             return { deposit, investment, profit, roi };
         }
 
+        function getListingUrl(property) {
+            if (!property.address) return null;
+            
+            // Try to get the URL from PropertyData if available
+            if (property.url) return property.url;
+            if (property.listing_url) return property.listing_url;
+            if (property.portal_url) return property.portal_url;
+            
+            // Fallback: Create search URLs for major portals
+            const encoded = encodeURIComponent(property.address);
+            const portal = property.portal || 'rightmove'; // default to rightmove
+            
+            if (portal.toLowerCase().includes('zoopla')) {
+                return `https://www.zoopla.co.uk/for-sale/${encoded.toLowerCase().replace(/%20/g, '-')}/`;
+            }
+            
+            // Default to Rightmove search
+            return `https://www.rightmove.co.uk/property-for-sale/find.html?searchTerm=${encoded}`;
+        }
+
+        function getMonthsOnMarket(property) {
+            if (property.months_on_market) {
+                return `${property.months_on_market} months`;
+            }
+            if (property.days_on_market) {
+                const days = property.days_on_market;
+                if (days < 30) return `${days} days`;
+                const months = Math.floor(days / 30);
+                return `${months} month${months > 1 ? 's' : ''}`;
+            }
+            return 'Recently listed';
+        }
+
         async function search() {
             state.loading = true;
             state.properties = [];
             render();
 
             try {
+                const radiusInput = document.getElementById('radiusInput');
+                const radius = radiusInput ? parseInt(radiusInput.value) : 10;
+
                 const response = await fetch('https://brr-dashboard-production.up.railway.app/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         apiKey: state.apiKey,
                         postcode: state.region,
-                        list: state.list
+                        list: state.list,
+                        radius: radius
                     })
                 });
 
@@ -76,12 +151,19 @@
                 } else {
                     alert('Error: ' + (data.message || 'Search failed'));
                 }
-            } catch (err) {
-                alert('Error: ' + err.message);
+            } catch (err) { 
+                alert('Error: ' + err.message); 
             }
+            finally { state.loading = false; render(); }
+        }
 
-            state.loading = false;
-            render();
+        function openProperty(property) {
+            const url = getListingUrl(property);
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                alert('Listing URL not available for this property');
+            }
         }
 
         function render() {
@@ -102,58 +184,59 @@
             let html = `
                 <div class="header">
                     <h1>🏠 BRR Property Dashboard</h1>
-                    <p>Buy-Renovate-Refinance in North East</p>
+                    <p>Buy-Renovate-Refinance in North East England</p>
                 </div>
                 <div class="panel">
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div class="grid">
                         <div>
                             <label>Region</label>
-                            <select onchange="state.region=this.value">
-                                <option value="NE1" selected>Newcastle</option>
-                                <option value="DH1">Durham</option>
-                                <option value="SR1">Sunderland</option>
-                                <option value="TS1">Middlesbrough</option>
+                            <select id="regionSelect" onchange="state.region=this.value">
+                                ${Object.entries(regions).map(([k,v]) => `<option value="${k}" ${k===state.region?'selected':''}>${v}</option>`).join('')}
                             </select>
                         </div>
                         <div>
                             <label>List</label>
                             <select onchange="state.list=this.value">
-                                <option value="unmodernised-properties" selected>Unmodernised</option>
-                                <option value="price-reduced">Price Reduced</option>
-                                <option value="high-yield">High Yield</option>
+                                ${Object.entries(lists).map(([k,v]) => `<option value="${k}" ${k===state.list?'selected':''}>${v}</option>`).join('')}
                             </select>
                         </div>
                         <div>
-                            <label>Min Price</label>
-                            <input type="number" value="15000" onchange="state.minPrice=parseInt(this.value)">
+                            <label>Min Price (£)</label>
+                            <input type="number" value="${state.minPrice}" onchange="state.minPrice=parseInt(this.value)">
                         </div>
                         <div>
-                            <label>Max Price</label>
-                            <input type="number" value="85000" onchange="state.maxPrice=parseInt(this.value)">
+                            <label>Max Price (£)</label>
+                            <input type="number" value="${state.maxPrice}" onchange="state.maxPrice=parseInt(this.value)">
+                        </div>
                         <div>
                             <label>Radius (miles)</label>
-                            <input type="number" id="radiusInput" value="10" onchange="state.radius=parseInt(this.value)">
+                            <input type="number" id="radiusInput" value="${state.radius}" onchange="state.radius=parseInt(this.value)">
                         </div>
                     </div>
-                    <button class="btn" onclick="search()" ${state.loading ? 'disabled' : ''} style="margin-right: 10px;">🔍 Search</button>
-                    <button class="btn" onclick="state.showSetup=true;render()" style="background:#666;">Change Key</button>
+                    <div class="buttons">
+                        <button class="btn" onclick="search()" ${state.loading ? 'disabled' : ''}>
+                            ${state.loading ? '⏳ Searching...' : '🔍 Search'}
+                        </button>
+                        <button class="btn" onclick="state.showSetup=true;render()" style="background:#666;">🔑 Change Key</button>
+                    </div>
                 </div>
             `;
 
             if (state.loading) {
-                html += '<div class="panel" style="text-align:center;">Loading...</div>';
+                html += '<div class="panel" style="text-align:center;">⏳ Searching properties...</div>';
             } else if (state.properties.length === 0) {
-                html += '<div class="panel" style="text-align:center;color:#666;">Click Search to find properties</div>';
+                html += '<div class="panel" style="text-align:center;color:#666;">Click Search to find BRR opportunities</div>';
             } else {
                 html += `
                     <div class="panel">
-                        <h3>Found ${state.properties.length} properties</h3>
+                        <h3>📋 Found ${state.properties.length} properties</h3>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Address</th>
+                                    <th>Address (Click to view listing)</th>
                                     <th>Price</th>
                                     <th>Beds</th>
+                                    <th>Days on Market</th>
                                     <th>Profit</th>
                                     <th>ROI</th>
                                 </tr>
@@ -161,13 +244,23 @@
                             <tbody>
                 `;
                 
-                state.properties.slice(0, 20).forEach(p => {
+                state.properties.slice(0, 50).forEach(p => {
                     const m = metrics(p);
+                    const daysInfo = getMonthsOnMarket(p);
                     html += `
                         <tr>
-                            <td><strong>${p.address}</strong></td>
+                            <td>
+                                <a class="address-link" onclick="openProperty({
+                                    address: '${p.address.replace(/'/g, "\\'")}',
+                                    url: '${getListingUrl(p) || ''}',
+                                    portal: '${p.portal || 'rightmove'}'
+                                })" title="Click to open listing">
+                                    ${p.address}
+                                </a>
+                            </td>
                             <td class="price">£${(p.price || 0).toLocaleString()}</td>
                             <td>${p.bedrooms || '-'}</td>
+                            <td><span class="days">${daysInfo}</span></td>
                             <td class="price">£${m.profit.toLocaleString()}</td>
                             <td><span class="roi">${m.roi}%</span></td>
                         </tr>
@@ -184,6 +277,9 @@
             app.innerHTML = html;
         }
 
+        window.saveKey = saveKey; 
+        window.search = search;
+        window.openProperty = openProperty;
         render();
     </script>
 </body>
