@@ -234,6 +234,7 @@
                             <thead>
                                 <tr>
                                     <th>Address (Click to view listing)</th>
+                                    <th>Postcode</th>
                                     <th>Price</th>
                                     <th>Beds</th>
                                     <th>Days on Market</th>
@@ -247,6 +248,10 @@
                 state.properties.slice(0, 50).forEach(p => {
                     const m = metrics(p);
                     const daysInfo = getMonthsOnMarket(p);
+                    const postcode = p.postcode || p.post_code || 'N/A';
+                    const isSelected = postcode.substring(0, state.region.length) === state.region;
+                    const postcodeStyle = isSelected ? '' : 'background: #fff3cd;';
+                    
                     html += `
                         <tr>
                             <td>
@@ -258,6 +263,7 @@
                                     ${p.address}
                                 </a>
                             </td>
+                            <td style="${postcodeStyle}"><strong>${postcode}</strong></td>
                             <td class="price">£${(p.price || 0).toLocaleString()}</td>
                             <td>${p.bedrooms || '-'}</td>
                             <td><span class="days">${daysInfo}</span></td>
